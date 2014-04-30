@@ -1,5 +1,6 @@
 require 'erb'
 require 'active_support/inflector'
+require 'active_support/all'
 require_relative 'params'
 require_relative 'session'
 
@@ -15,7 +16,7 @@ class ControllerBase
   # set the responses content type to the given type
   # later raise an error if the developer tries to double render
   def render_content(content, type)
-    res['Content-Type'] = type
+    res.content_type = type
     res.body = content
 
     raise StandardError if already_built_response?
@@ -43,10 +44,10 @@ class ControllerBase
   def render(template_name)
     path = "views/#{self.class.to_s.underscore}/#{template_name}.html.erb"
     template = File.read(path)
-    erb = ERB.new(template)
+    rendered_template = ERB.new(template)
     b = binding()
 
-    render_content(erb.result(b), 'text/html')
+    render_content(rendered_template.result(b), 'text/html')
   end
 
   # method exposing a `Session` object

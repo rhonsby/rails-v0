@@ -1,3 +1,5 @@
+require 'active_support/all'
+
 class Route
   attr_reader :pattern, :http_method, :controller_class, :action_name
 
@@ -8,17 +10,16 @@ class Route
 
   # checks if pattern matches path and method matches request method
   def matches?(req)
-    req.path =~ pattern && req.request_method == http_method
+    pattern =~ req.path && req.request_method.downcase.to_sym == http_method
   end
 
   # use pattern to pull out route params (save for later?)
   # instantiate controller and call controller action
   def run(req, res)
-    @route_params = {}
+    @route_params = HashWithIndifferentAccess.new
 
     data = pattern.match(req.path)
     data.names.each { |name| @route_params[name] = data[name] }
-
     controller_class.new(req, res, @route_params).invoke_action(action_name)
   end
 end
@@ -56,7 +57,7 @@ class Router
 
   # either throw 404 or call run on a matched route
   def run(req, res)
-    route = @routes.find { |route| route.matches?(req) }
+    route = match(req)
 
     if route
       route.run(req, res)

@@ -6,12 +6,9 @@ class Params
   # 2. post body
   # 3. route params
   def initialize(req, route_params = {})
-    # puts "########## ROUTE PARAMS: #{route_params}"
-    @params = {}
-    @params.merge!(parse_www_encoded_form(req.body)) if req.body
-    @params.merge!(parse_www_encoded_form(req.query_string)) if req.query_string
-    @params.merge!(route_params)
-    # puts @params
+    @params = route_params
+    parse_www_encoded_form(req.body) if req.body
+    parse_www_encoded_form(req.query_string) if req.query_string
 
     @permitted_keys = []
   end
@@ -43,24 +40,24 @@ class Params
   # argument format
   # user[address][street]=main&user[address][zip]=89436
   # should return
+  #
   # { "user" => { "address" => { "street" => "main", "zip" => "89436" } } }
   def parse_www_encoded_form(www_encoded_form)
     decoded_url = URI.decode_www_form(www_encoded_form)
+
     decoded_url.each do |arr|
       arr.map! { |el| parse_key(el) }
     end
 
-    @params = Hash.new { |h, k| h[k] = {} }
-
     decoded_url.each do |data|
       path, value = data
-      params = { path.pop => value.first }
+      new_params = { path.pop => value.first }
 
       until path.empty?
-        params = { path.pop => params }
+        new_params = { path.pop => new_params }
       end
 
-      deep_merge(@params, params)
+      deep_merge(@params, new_params)
     end
 
     @params
